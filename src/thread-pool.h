@@ -14,7 +14,15 @@
 #include <functional>  // for the function template used in the schedule signature
 #include <thread>      // for thread
 #include <vector>      // for vector
+#include <queue>
+#include "Semaphore.h"
 
+class Worker{
+  bool occupied;
+  std::function<void(void)> thunk;
+  condition_variable_any cv_worker;
+  friend class ThreadPool;
+};
 class ThreadPool {
  public:
 
@@ -46,9 +54,17 @@ class ThreadPool {
   ~ThreadPool();
   
  private:
-  std::thread dt;                // dispatcher thread handle
+  std::thread dt;               // dispatcher thread handle
   std::vector<std::thread> wts;  // worker thread handles
-
+  std::queue<std::function<void(void)>> queue_thunks; // queue of thunks to be executed
+  std::mutex queue_mutex; // mutex to protect the queue
+  Semaphore semaphore_workers;
+  condition_variable_any cv; // condition variable to signal the dispatcher
+  bool done; // flag to indicate when the ThreadPool is done
+  void worker(size_t id); // worker thread function
+  void dispatcher(); // dispatcher thread function
+  std::vector<Worker> my_workers_info;
+  size_t workers_working;
 /**
  * ThreadPools are the type of thing that shouldn't be cloneable, since it's
  * not clear what it means to clone a ThreadPool (should copies of all outstanding
@@ -61,5 +77,7 @@ class ThreadPool {
   ThreadPool(const ThreadPool& original) = delete;
   ThreadPool& operator=(const ThreadPool& rhs) = delete;
 };
+
+
 
 #endif
