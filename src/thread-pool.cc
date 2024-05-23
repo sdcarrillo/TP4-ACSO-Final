@@ -17,8 +17,6 @@ ThreadPool::ThreadPool(size_t numThreads) :
  workers_working(0)
 
  {
-    done = false;
-    workers_working= 0;
 
     for (size_t i = 0; i < numThreads; i++) {
         wts[i] = thread([this, i] { worker(i); });
